@@ -4,7 +4,7 @@ export function getAffectCharacterSheets() { return game.settings.get('proper-pi
 export function getIgnoreTag() { return game.settings.get('proper-pixels', 'tokenTag') };
 export function getShouldIgnorePreTaggerReady(token) {
     const tags = token.document?.flags?.tagger?.tags;
-    return game.modules.get('tagger')?.active && tags != null && (tags.find(t => t === getIgnoreTag()) != null)
+    return game.modules.get('tagger')?.active && tags != null && tags.length > 0 && (tags.find(t => t === getIgnoreTag()) != null);
 };
 
 
@@ -103,6 +103,7 @@ Hooks.on("preUpdateToken", (token) => {
         baseTexture.setStyle(0, 0);
     }
 })
+
 
 Hooks.on("createTile", async (tile) => {
     // you know the drill
