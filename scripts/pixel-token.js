@@ -1,10 +1,24 @@
+// @ts-check
+/**
+ * @typedef {Token.Implementation} TokenLike
+ * @typedef {Tile.Implementation} TileLike
+ */
+
+/** @param {Element} element @returns {HTMLElement} */
+const asHTMLElement = (element) => /** @type {HTMLElement} */ (element);
+
+/** @param {TokenLike | TileLike} object @returns {string[] | undefined} the "tagger" module's tags flag, untyped since Tagger doesn't publish type definitions */
+const getTaggerTags = (object) => /** @type {any} */ (object.document?.flags)?.tagger?.tags;
+
 export function getAffectTiles() { return game.settings.get('proper-pixels', 'affectTiles') };
 export function getAffectTokens() { return game.settings.get('proper-pixels', 'affectTokens') };
-export function getAffectCharacterSheets() { return game.settings.get('proper-pixels', 'affectCharacterSheets') ? window['game'].system.id == 'id' : false};
-export function getIgnoreTag() { return game.settings.get('proper-pixels', 'tokenTag') };
+export function getAffectCharacterSheets() { return game.settings.get('proper-pixels', 'affectCharacterSheets') ? window['game'].system.id == 'id' : false };
+/** @returns {string} */
+export function getIgnoreTag() { return String(game.settings.get('proper-pixels', 'tokenTag')) };
+/** @param {TokenLike | TileLike} token */
 export function getShouldIgnorePreTaggerReady(token) {
-    const tags = token.document?.flags?.tagger?.tags;
-    return game.modules.get('tagger')?.active && tags != null && tags.length > 0 && (tags.find(t => t === getIgnoreTag()) != null);
+    const tags = getTaggerTags(token);
+    return game.modules.get('tagger')?.active && tags != null && tags.length > 0 && (tags.find((/** @type {string} */ t) => t === getIgnoreTag()) != null);
 };
 
 
@@ -16,7 +30,6 @@ Hooks.once('init', async function () {
         hint: "If this is toggled, Tiles will be affected by this module",
         scope: "world",
         type: Boolean,
-        default: 1,
         config: true,
         requiresReload: true,
         default: true
@@ -27,7 +40,6 @@ Hooks.once('init', async function () {
         hint: "If this is toggled, Tokens will be affected by this module",
         scope: "world",
         type: Boolean,
-        default: 1,
         config: true,
         requiresReload: true,
         default: true
@@ -39,7 +51,6 @@ Hooks.once('init', async function () {
             hint: "If this is toggled, Character Sheets and side menu Thumbnails will be affected by this module",
             scope: "world",
             type: Boolean,
-            default: 1,
             config: true,
             requiresReload: true,
             default: true
@@ -128,20 +139,24 @@ Hooks.on("preUpdateTile", (tile) => {
     }
 })
 
-if (window['game'].system.id == 'dnd5e') {
-    Hooks.on("renderActorSheet", () => {
-        if (getAffectCharacterSheets()) {
-            var list = document.getElementsByClassName("portrait")
-            for (let item of list)
-                item.style.imageRendering = "pixelated"
-        }
-    })
+/** @param {string} type */
+const isSystem = (type) => window['game'].system.id == type
+const dnd5e = 'dnd5e'
 
-    Hooks.on("renderSidebarTab", () => {
-        if (getAffectCharacterSheets()) {
-            var list = document.getElementsByClassName("thumbnail")
-            for (let item of list)
-                item.style.imageRendering = "pixelated"
-        }
-    })
-}
+Hooks.on("renderActorSheet", () => {
+    if (isSystem(dnd5e) && getAffectCharacterSheets()) {
+        var list = document.getElementsByClassName("portrait")
+        for (let item of list)
+            asHTMLElement(item).style.imageRendering = "pixelated"
+    }
+})
+
+// @ts-expect-error - renderSidebarTab is a deprecated hook not present in current type defs, kept for older core compatibility
+Hooks.on("renderSidebarTab", () => {
+    if (isSystem(dnd5e) && getAffectCharacterSheets()) {
+        var list = document.getElementsByClassName("thumbnail")
+        for (let item of list)
+            asHTMLElement(item).style.imageRendering = "pixelated"
+    }
+})
+
